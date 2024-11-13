@@ -221,7 +221,7 @@ const LeadForm: React.FC<LeadFormProps> = ({ onSave }) => {
         </div> */}
 <div className='space-y-2'>
     <Label htmlFor='lastFollowUp'>Last Follow-up Date</Label>
-    <TextInput type='date' id='lastFolllowUp' value={lead.lastFollowUp || ""} onChange={(e) => handleChange("lastRFollowUp",e.target.value)}/>
+    <TextInput type='date' id='lastFollowUp' value={lead.lastFollowUp || ''} onChange={(e) => handleChange("lastFollowUp",e.target.value)}/>
 </div>
 <div className="space-y-2">
             <Label htmlFor="nextFollowUp">Next Follow-up Date</Label>
