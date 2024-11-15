@@ -1,23 +1,22 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
-    TextField,
-    Select,
-    MenuItem,
-    FormControl,
-    InputLabel,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    Paper,
-    IconButton,
-    Pagination
-  } from "@mui/material";
-  import { Edit, Delete } from "@mui/icons-material";
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  IconButton,
+  Pagination
+} from "@mui/material";
+import { Edit, Delete } from "@mui/icons-material";
+import axios from "axios";
+import debounce from 'lodash/debounce';
+
 type Lead = {
-  id: string;
+  leadId?: string;
+  id?: string;
   status: string;
   month: string;
   manager: string;
@@ -33,404 +32,256 @@ type Lead = {
   priorityLevel: string;
 };
 
-const dummyLeadsData: Lead[] = [
-    {
-      id: "LD001",
-      status: "New",
-      month: "2023-11",
-      manager: "Rajat",
-      name: "John Doe",
-      phoneNumber: "123-456-7890",
-      leadSource: "Walk-in",
-      budget: 20000,
-      paymentPlan: "Monthly",
-      lastFollowUp: "2023-11-01",
-      nextFollowUp: "2023-11-10",
-      createdDate: "2023-10-15",
-      updatedDate: "2023-11-05",
-      priorityLevel: "High",
-    },
-    {
-      id: "LD002",
-      status: "Hot",
-      month: "2023-10",
-      manager: "Tanveer",
-      name: "Jane Smith",
-      phoneNumber: "234-567-8901",
-      leadSource: "Facebook",
-      budget: 30000,
-      paymentPlan: "Bi-weekly",
-      lastFollowUp: "2023-10-15",
-      nextFollowUp: "2023-11-15",
-      createdDate: "2023-10-10",
-      updatedDate: "2023-10-20",
-      priorityLevel: "Medium",
-    },
-    {
-      id: "LD003",
-      status: "Cold",
-      month: "2023-09",
-      manager: "Vipash",
-      name: "Alice Johnson",
-      phoneNumber: "345-678-9012",
-      leadSource: "Marketplace",
-      budget: 15000,
-      paymentPlan: "Cash Deal",
-      lastFollowUp: "2023-09-10",
-      nextFollowUp: "2023-09-20",
-      createdDate: "2023-09-01",
-      updatedDate: "2023-09-15",
-      priorityLevel: "Low",
-    },
-    {
-      id: "LD004",
-      status: "Warm",
-      month: "2023-10",
-      manager: "Rajat",
-      name: "Michael Brown",
-      phoneNumber: "456-789-0123",
-      leadSource: "Referral",
-      budget: 25000,
-      paymentPlan: "Monthly",
-      lastFollowUp: "2023-10-12",
-      nextFollowUp: "2023-10-22",
-      createdDate: "2023-10-05",
-      updatedDate: "2023-10-15",
-      priorityLevel: "Medium",
-    },
-    {
-      id: "LD005",
-      status: "Pending Approval",
-      month: "2023-08",
-      manager: "Tanveer",
-      name: "Emily Davis",
-      phoneNumber: "567-890-1234",
-      leadSource: "Ad",
-      budget: 18000,
-      paymentPlan: "Bi-weekly",
-      lastFollowUp: "2023-08-15",
-      nextFollowUp: "2023-08-25",
-      createdDate: "2023-08-01",
-      updatedDate: "2023-08-10",
-      priorityLevel: "High",
-    },
-    {
-      id: "LD006",
-      status: "Lost",
-      month: "2023-07",
-      manager: "Vipash",
-      name: "Chris Wilson",
-      phoneNumber: "678-901-2345",
-      leadSource: "Car Gurus",
-      budget: 22000,
-      paymentPlan: "Cash Deal",
-      lastFollowUp: "2023-07-20",
-      nextFollowUp: "2023-07-30",
-      createdDate: "2023-07-05",
-      updatedDate: "2023-07-15",
-      priorityLevel: "Low",
-    },
-    {
-      id: "LD007",
-      status: "Closed",
-      month: "2023-06",
-      manager: "Rajat",
-      name: "Sophia Martinez",
-      phoneNumber: "789-012-3456",
-      leadSource: "Web",
-      budget: 27000,
-      paymentPlan: "Monthly",
-      lastFollowUp: "2023-06-15",
-      nextFollowUp: "2023-06-25",
-      createdDate: "2023-06-01",
-      updatedDate: "2023-06-10",
-      priorityLevel: "High",
-    },
-    {
-      id: "LD008",
-      status: "New",
-      month: "2023-11",
-      manager: "Tanveer",
-      name: "Oliver Garcia",
-      phoneNumber: "890-123-4567",
-      leadSource: "Instagram",
-      budget: 24000,
-      paymentPlan: "Monthly",
-      lastFollowUp: "2023-11-05",
-      nextFollowUp: "2023-11-15",
-      createdDate: "2023-10-20",
-      updatedDate: "2023-11-01",
-      priorityLevel: "High",
-    },
-    {
-      id: "LD009",
-      status: "Hot",
-      month: "2023-10",
-      manager: "Vipash",
-      name: "Ava Lee",
-      phoneNumber: "901-234-5678",
-      leadSource: "Walk-in",
-      budget: 32000,
-      paymentPlan: "Bi-weekly",
-      lastFollowUp: "2023-10-05",
-      nextFollowUp: "2023-10-15",
-      createdDate: "2023-10-01",
-      updatedDate: "2023-10-10",
-      priorityLevel: "Medium",
-    },
-    {
-      id: "LD010",
-      status: "Timepass",
-      month: "2023-09",
-      manager: "Rajat",
-      name: "Liam White",
-      phoneNumber: "012-345-6789",
-      leadSource: "Marketplace",
-      budget: 12000,
-      paymentPlan: "Cash Deal",
-      lastFollowUp: "2023-09-10",
-      nextFollowUp: "2023-09-20",
-      createdDate: "2023-09-01",
-      updatedDate: "2023-09-05",
-      priorityLevel: "Low",
-    },
-    {
-      id: "LD011",
-      status: "Hot",
-      month: "2023-08",
-      manager: "Vipash",
-      name: "Amelia Brown",
-      phoneNumber: "234-987-6543",
-      leadSource: "Referral",
-      budget: 28000,
-      paymentPlan: "Monthly",
-      lastFollowUp: "2023-08-20",
-      nextFollowUp: "2023-08-30",
-      createdDate: "2023-08-01",
-      updatedDate: "2023-08-15",
-      priorityLevel: "High",
-    },
-    {
-      id: "LD012",
-      status: "Cold",
-      month: "2023-07",
-      manager: "Rajat",
-      name: "Lucas Green",
-      phoneNumber: "876-543-2109",
-      leadSource: "Web",
-      budget: 18000,
-      paymentPlan: "Bi-weekly",
-      lastFollowUp: "2023-07-05",
-      nextFollowUp: "2023-07-20",
-      createdDate: "2023-07-01",
-      updatedDate: "2023-07-10",
-      priorityLevel: "Medium",
-    },
-    {
-      id: "LD013",
-      status: "New",
-      month: "2023-06",
-      manager: "Tanveer",
-      name: "Grace Lee",
-      phoneNumber: "321-654-0987",
-      leadSource: "Instagram",
-      budget: 22000,
-      paymentPlan: "Cash Deal",
-      lastFollowUp: "2023-06-12",
-      nextFollowUp: "2023-06-22",
-      createdDate: "2023-06-01",
-      updatedDate: "2023-06-10",
-      priorityLevel: "High",
-    },
-    {
-      id: "LD014",
-      status: "Pending Approval",
-      month: "2023-05",
-      manager: "Vipash",
-      name: "David Parker",
-      phoneNumber: "210-987-6543",
-      leadSource: "Ad",
-      budget: 25000,
-      paymentPlan: "Monthly",
-      lastFollowUp: "2023-05-10",
-      nextFollowUp: "2023-05-20",
-      createdDate: "2023-05-01",
-      updatedDate: "2023-05-15",
-      priorityLevel: "Medium",
-    },
-    {
-      id: "LD015",
-      status: "Warm",
-      month: "2023-04",
-      manager: "Rajat",
-      name: "Hannah Moore",
-      phoneNumber: "456-789-3210",
-      leadSource: "Facebook",
-      budget: 29000,
-      paymentPlan: "Bi-weekly",
-      lastFollowUp: "2023-04-18",
-      nextFollowUp: "2023-04-28",
-      createdDate: "2023-04-05",
-      updatedDate: "2023-04-20",
-      priorityLevel: "Low",
-    },
-  ];
-  
+const ListOfLeads: React.FC = () => {
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [leadSourceFilter, setLeadSourceFilter] = useState<string>("");
+  const [minPrice, setMinPrice] = useState<number | "">("");
+  const [maxPrice, setMaxPrice] = useState<number | "">("");
+  const [priorityFilter, _setPriorityFilter] = useState<string>("");
+  const [sortField, setSortField] = useState<keyof Lead>("name");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 5;
 
-
-  const ListOfLeads: React.FC = () => {
-    const [searchQuery, setSearchQuery] = useState<string>("");
-    const [statusFilter, setStatusFilter] = useState<string>("");
-    const [leadSourceFilter, setLeadSourceFilter] = useState<string>("");
-    const [minPrice, _setMinPrice] = useState<number | "">("");
-    const [maxPrice, _setMaxPrice] = useState<number | "">("");
-    const [priorityFilter, _setPriorityFilter] = useState<string>("");
-    const [sortField, setSortField] = useState<keyof Lead>("name");
-    const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-    const [currentPage, setCurrentPage] = useState<number>(0);
-    const itemsPerPage = 5;
-    // const [startDate, setStartDate] = useState<string>("");
-    // const [endDate, setEndDate] = useState<string>("");
-  
-    // Handle sorting when a column header is clicked
-    const handleSort = (field: keyof Lead) => {
-      if (sortField === field) {
-        // Toggle sort order if clicking the same field
-        setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-      } else {
-        setSortField(field);
-        setSortOrder("asc");
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/leads`);
+        setLeads(response.data.data);
+      } catch (error) {
+        console.error("Error fetching leads:", error);
       }
     };
-  
-    // Filter and sort data
-    const filteredData = dummyLeadsData
+
+    fetchData();
+  }, []);
+
+  const handleSort = (field: keyof Lead) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
+    }
+  };
+
+  const handlePageChange = (_event: React.ChangeEvent<unknown>, page: number) => {
+    setCurrentPage(page);
+  };
+
+  // Debounced function for live search
+  const debouncedSearch = debounce((query: string) => {
+    setSearchQuery(query);
+    setCurrentPage(1); // Reset to first page on new search
+  }, 500);
+
+  // Filter, sort, and paginate leads data locally
+  const filteredLeads = leads
     .filter((lead) => {
       const matchesStatus = statusFilter ? lead.status === statusFilter : true;
       const matchesLeadSource = leadSourceFilter ? lead.leadSource === leadSourceFilter : true;
       const matchesMinPrice = minPrice !== "" ? lead.budget >= minPrice : true;
       const matchesMaxPrice = maxPrice !== "" ? lead.budget <= maxPrice : true;
       const matchesPriority = priorityFilter ? lead.priorityLevel === priorityFilter : true;
-      const matchesSearchQuery =
-        lead.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        lead.manager.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        lead.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        lead.phoneNumber.includes(searchQuery);
+      const matchesSearchQuery = searchQuery
+        ? lead.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          lead.manager.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          lead.leadId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          lead.phoneNumber.includes(searchQuery)
+        : true;
 
       return matchesStatus && matchesLeadSource && matchesMinPrice && matchesMaxPrice && matchesPriority && matchesSearchQuery;
     })
     .sort((a, b) => {
-      if (a[sortField] < b[sortField]) {
-        return sortOrder === "asc" ? -1 : 1;
-      }
-      if (a[sortField] > b[sortField]) {
-        return sortOrder === "asc" ? 1 : -1;
-      }
+      const aField = a[sortField] as string | number;
+      const bField = b[sortField] as string | number;
+
+      if (aField < bField) return sortOrder === "asc" ? -1 : 1;
+      if (aField > bField) return sortOrder === "asc" ? 1 : -1;
       return 0;
     });
-    // Pagination logic
-    const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-    const paginatedData = filteredData.slice(
-        currentPage * itemsPerPage,
-        currentPage * itemsPerPage + itemsPerPage
-      );
-    
-      const handlePageChange = (_event: unknown, newPage: number) => {
-        setCurrentPage(newPage);
-      };
-  
-    return (
-        <div style={{ padding: "20px" }}>
-        <h2 style={{ marginBottom: "20px" }}>List of Leads</h2>
-  
-        {/* Search and Filter Controls */}
-        <div style={{ display: "flex", gap: "16px", marginBottom: "16px" }}>
-          <TextField
-            label="Search"
-            variant="outlined"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ minWidth: "200px" }}
+
+  // Paginate filtered data
+  const totalPages = Math.ceil(filteredLeads.length / itemsPerPage);
+  const paginatedLeads = filteredLeads.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  return (
+    <div style={{ padding: "20px" }}>
+      <h2 style={{ marginBottom: "20px" }}>List of Leads</h2>
+
+      {/* Search and Filter Controls */}
+      <div style={{ display: "flex", gap: "16px", marginBottom: "16px", alignItems: "flex-start", flexWrap: "wrap" }}>
+        
+        {/* Search Field */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: "200px" }}>
+          <label htmlFor="search" className="text-gray-700 font-medium mb-1">
+            Search
+          </label>
+          <input
+            type="text"
+            id="search"
+            onChange={(e) => debouncedSearch(e.target.value)}
+            placeholder="Search..."
+            style={{
+              padding: "8px",
+              borderRadius: "4px",
+              border: "1px solid #ccc",
+              width: "100%",
+            }}
           />
-  
-          <FormControl variant="outlined" style={{ minWidth: "200px" }}>
-            <InputLabel>Status</InputLabel>
-            <Select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              label="Status"
-            >
-              <MenuItem value="">All Statuses</MenuItem>
-              <MenuItem value="New">New</MenuItem>
-              <MenuItem value="Hot">Hot</MenuItem>
-              <MenuItem value="Cold">Cold</MenuItem>
-              {/* Add more options as needed */}
-            </Select>
-          </FormControl>
-  
-          <FormControl variant="outlined" style={{ minWidth: "200px" }}>
-            <InputLabel>Lead Source</InputLabel>
-            <Select
-              value={leadSourceFilter}
-              onChange={(e) => setLeadSourceFilter(e.target.value)}
-              label="Lead Source"
-            >
-              <MenuItem value="">All Lead Sources</MenuItem>
-              <MenuItem value="Walk-in">Walk-in</MenuItem>
-              {/* Add more options as needed */}
-            </Select>
-          </FormControl>
         </div>
-  
-        {/* Table */}
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell onClick={() => handleSort("id")}>ID</TableCell>
-                <TableCell onClick={() => handleSort("name")}>Name</TableCell>
-                <TableCell onClick={() => handleSort("status")}>Status</TableCell>
-                <TableCell onClick={() => handleSort("manager")}>Manager</TableCell>
-                <TableCell onClick={() => handleSort("phoneNumber")}>Phone Number</TableCell>
-                <TableCell onClick={() => handleSort("leadSource")}>Lead Source</TableCell>
-                <TableCell onClick={() => handleSort("budget")}>Budget</TableCell>
-                <TableCell>Actions</TableCell>
+
+        {/* Status Filter */}
+        <div style={{ flex: "0 1 200px", display: "flex", flexDirection: "column" }}>
+          <label htmlFor="status" className="text-gray-700 font-medium mb-1">
+            Status
+          </label>
+          <select
+            id="status"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            style={{
+              padding: "8px",
+              borderRadius: "4px",
+              border: "1px solid #ccc",
+              width: "100%",
+            }}
+          >
+            <option value="">All Statuses</option>
+            <option value="New">New</option>
+            <option value="Hot">Hot</option>
+            <option value="Cold">Cold</option>
+            <option value="Warm">Warm</option>
+            <option value="Lost">Lost</option>
+            <option value="Closed">Closed</option>
+            <option value="Pending Approval">Pending Approval</option>
+          </select>
+        </div>
+
+        {/* Lead Source Filter */}
+        <div style={{ flex: "0 1 200px", display: "flex", flexDirection: "column" }}>
+          <label htmlFor="leadSource" className="text-gray-700 font-medium mb-1">
+            Lead Source
+          </label>
+          <select
+            id="leadSource"
+            value={leadSourceFilter}
+            onChange={(e) => setLeadSourceFilter(e.target.value)}
+            style={{
+              padding: "8px",
+              borderRadius: "4px",
+              border: "1px solid #ccc",
+              width: "100%",
+            }}
+          >
+           <option value="">All Lead Sources</option>
+  <option value="Walk-in">Walk-in</option>
+  <option value="Instagram">Instagram</option>
+  <option value="Facebook">Facebook</option>
+  <option value="Marketplace">Marketplace</option>
+  <option value="Referral">Referral</option>
+  <option value="Ad">Ad</option>
+  <option value="Car Gurus">Car Gurus</option>
+  <option value="Web">Web</option>
+          </select>
+        </div>
+
+        {/* Min Price Filter */}
+        <div style={{ flex: "0 1 200px", display: "flex", flexDirection: "column" }}>
+          <label htmlFor="minPrice" className="text-gray-700 font-medium mb-1">
+            Min Price
+          </label>
+          <input
+            type="number"
+            id="minPrice"
+            value={minPrice}
+            onChange={(e) => setMinPrice(e.target.value === "" ? "" : Number(e.target.value))}
+            placeholder="Min Price"
+            style={{
+              padding: "8px",
+              borderRadius: "4px",
+              border: "1px solid #ccc",
+              width: "100%",
+            }}
+          />
+        </div>
+
+        {/* Max Price Filter */}
+        <div style={{ flex: "0 1 200px", display: "flex", flexDirection: "column" }}>
+          <label htmlFor="maxPrice" className="text-gray-700 font-medium mb-1">
+            Max Price
+          </label>
+          <input
+            type="number"
+            id="maxPrice"
+            value={maxPrice}
+            onChange={(e) => setMaxPrice(e.target.value === "" ? "" : Number(e.target.value))}
+            placeholder="Max Price"
+            style={{
+              padding: "8px",
+              borderRadius: "4px",
+              border: "1px solid #ccc",
+              width: "100%",
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Table */}
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+          <TableRow style={{ backgroundColor: 'black', color: 'white' }}>
+  <TableCell style={{ color: 'white', fontWeight: 'bold' }} onClick={() => handleSort("leadId")}>ID</TableCell>
+  <TableCell style={{ color: 'white', fontWeight: 'bold' }} onClick={() => handleSort("name")}>Name</TableCell>
+  <TableCell style={{ color: 'white', fontWeight: 'bold' }} onClick={() => handleSort("status")}>Status</TableCell>
+  <TableCell style={{ color: 'white', fontWeight: 'bold' }} onClick={() => handleSort("manager")}>Manager</TableCell>
+  <TableCell style={{ color: 'white', fontWeight: 'bold' }} onClick={() => handleSort("phoneNumber")}>Phone Number</TableCell>
+  <TableCell style={{ color: 'white', fontWeight: 'bold' }} onClick={() => handleSort("leadSource")}>Lead Source</TableCell>
+  <TableCell style={{ color: 'white', fontWeight: 'bold' }} onClick={() => handleSort("budget")}>Budget</TableCell>
+  <TableCell style={{ color: 'white', fontWeight: 'bold' }}>Actions</TableCell>
+</TableRow>
+
+          </TableHead>
+          <TableBody>
+            {paginatedLeads.map((lead) => (
+              <TableRow key={lead.id}>
+                <TableCell>{lead.leadId}</TableCell>
+                <TableCell>{lead.name}</TableCell>
+                <TableCell>{lead.status}</TableCell>
+                <TableCell>{lead.manager}</TableCell>
+                <TableCell>{lead.phoneNumber}</TableCell>
+                <TableCell>{lead.leadSource}</TableCell>
+                <TableCell>${lead.budget.toLocaleString()}</TableCell>
+                <TableCell>
+                  <IconButton color="primary">
+                    <Edit />
+                  </IconButton>
+                  <IconButton color="secondary">
+                    <Delete />
+                  </IconButton>
+                </TableCell>
               </TableRow>
-            </TableHead>
-            <TableBody>
-              {paginatedData.map((lead) => (
-                <TableRow key={lead.id}>
-                  <TableCell>{lead.id}</TableCell>
-                  <TableCell>{lead.name}</TableCell>
-                  <TableCell>{lead.status}</TableCell>
-                  <TableCell>{lead.manager}</TableCell>
-                  <TableCell>{lead.phoneNumber}</TableCell>
-                  <TableCell>{lead.leadSource}</TableCell>
-                  <TableCell>${lead.budget.toLocaleString()}</TableCell>
-                  <TableCell>
-                    <IconButton color="primary">
-                      <Edit />
-                    </IconButton>
-                    <IconButton color="secondary">
-                      <Delete />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-  
-        {/* Pagination */}
-       <Pagination
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      {/* Pagination */}
+      <Pagination
         count={totalPages}
         page={currentPage}
         onChange={handlePageChange}
         color="primary"
         style={{ display: "flex", justifyContent: "center", marginTop: "16px" }}
       />
-      </div>
-    );
-  };
-  
-  export default ListOfLeads;
+    </div>
+  );
+};
+
+export default ListOfLeads;

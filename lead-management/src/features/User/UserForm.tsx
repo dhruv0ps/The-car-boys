@@ -2,9 +2,11 @@ import {useState} from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { Button, Label, TextInput, Select } from 'flowbite-react';
-
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import { HiEye, HiEyeOff } from 'react-icons/hi'; 
 import * as z from 'zod';
+import axios from 'axios';
 
 // Define the validation schema
 const formSchema = z.object({
@@ -38,11 +40,29 @@ export default function UserForm() {
       password: '',
     },
   });
+  const navigate = useNavigate()
 
   // Type `data` as FormData
-  const onSubmit = (data: FormData) => {
-    console.log(data);
-    // toast.success('User created successfully. The new user has been added to the system.');
+  const onSubmit = async (data: FormData) => {
+    try {
+      console.log(data);
+      const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/user`, data);
+      console.log(response.data);
+
+      // Show a success message if the response is successful
+      if (response.data.status === true) { // or check response.data.status if it's a custom success check
+        toast.success('User created successfully. The new user has been added to the system.');
+  
+    
+        setTimeout(() => {
+          navigate('/users/view'); 
+        }, 1000);
+      }
+    } catch (error) {
+      // Show an error message if the request fails
+      console.error(error);
+      toast.error('Failed to create user. Please try again.');
+    }
   };
 
   return (
@@ -72,7 +92,9 @@ export default function UserForm() {
         <Select id="role" {...register('role')} color={errors.role ? 'failure' : 'default'}>
           <option value="">Select a role</option>
           <option value="user">User</option>
-          <option value="admin">Admin</option>
+          <option value="ADMIN">Admin</option>
+          <option value="Associate1">Associate1</option>
+          
         </Select>
         {errors.role && (
           <p className="mt-2 text-sm text-red-600">{errors.role.message}</p>

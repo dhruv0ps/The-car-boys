@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import { Button } from 'flowbite-react';
-import { Label, TextInput, Select, Textarea, Checkbox } from 'flowbite-react';
+import { Label, TextInput, Select, Textarea, Checkbox,Spinner } from 'flowbite-react';
 import MultiSelectDropdown from '../../components/Multipleselect';
+import axios from 'axios';
+import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
+// import { FaChevronLeft } from 'react-icons/fa';
 type LeadFormProps = {
   onSave: (lead: Lead) => void;
 };
@@ -19,11 +23,11 @@ type Lead = {
     budget?: number;
     paymentPlan: string;
     creditScore? : number;
-    priority: string;
+    priorityLevel: string;
     comments?: string;
-    tradeIn: boolean;
-    tradeInDetails?: string;
-    downPayment? : number;
+    tradeInOption: boolean;
+    tradeInVehicleDetails?: string;
+    downPaymentAmount? : number;
     lastFollowUp? : string,
     nextFollowUp?: string;
   assignedTo?: string;
@@ -34,24 +38,59 @@ const LeadForm: React.FC<LeadFormProps> = ({ onSave }) => {
   const [lead, setLead] = useState<Partial<Lead>>({
     status: 'New',
     month: new Date().toISOString().slice(0, 7),
-    tradeIn: false,
-    priority: 'Medium',
+    tradeInOption: false,
+    priorityLevel: 'Medium',
+    interestedModels: [] 
   });
+  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false); 
 
-  const handleChange = (name: string, value: string | boolean | string[]) => {
+  const handleChange = (name: string, value: string | boolean | string[] | number) => {
     setLead((prevLead) => ({
       ...prevLead,
       [name]: value,
     }));
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(lead as Lead);
+   setIsLoading(true);
+    try{
+      const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/addlead`,lead)
+      console.log(response)
+      if(response.status === 201) {
+        toast.success("Lead saved successfully")
+        navigate("/leads/view")
+        onSave(lead as Lead);
+        setLead({
+          status: 'New',
+          month: new Date().toISOString().slice(0, 7),
+          tradeInOption: false,
+          priorityLevel: 'Medium',
+          interestedModels: [] 
+        });
+      }
+      
+    }
+    catch (error) {
+      console.error('Error saving lead:', error);
+      toast.error("Failed to save lead. Please try again.");
+    } finally {
+      setIsLoading(false); // Set loading to false after submission completes
+    }
   };
   const models = ['Mustang', 'Civic', 'Accord', 'Camry', 'Corolla'];
+  const priorities = ['High', 'Medium', 'Low'];
+
   return (
-    
+    <div>
+      <div className="mb-8 flex items-center justify-between">
+    {/* <Button  onClick={() => navigate(-1)} className="flex items-center gap-2">
+      <FaChevronLeft /><span style={{color:"black"}}>Back</span> 
+    </Button>
+    */}
+  </div>
+ 
  <div className="max-w-4xl mx-auto p-8 bg-white rounded-lg shadow-lg border border-gray-200">
 
  
@@ -71,6 +110,9 @@ const LeadForm: React.FC<LeadFormProps> = ({ onSave }) => {
             <option value="Hot">Hot</option>
             <option value="Cold">Cold</option>
             <option value="Warm">Warm</option>
+            <option value="Lost">Lost</option>
+            <option value="Closed">Closed</option>
+            <option value="Pending Approval">Pending Approval</option>
           </Select>
         </div>
 
@@ -97,6 +139,8 @@ const LeadForm: React.FC<LeadFormProps> = ({ onSave }) => {
             <option value="Rajat">Rajat</option>
             <option value="Tanveer">Tanveer</option>
             <option value="Vipash">Vipash</option>
+            
+
           </Select>
         </div>
 
@@ -168,7 +212,7 @@ const LeadForm: React.FC<LeadFormProps> = ({ onSave }) => {
               <option key={model} value={model}>{model}</option>
             ))}
           </Select> */}
-                <MultiSelectDropdown options={models} placeholder="Select models" />
+                <MultiSelectDropdown options={models} value={lead.interestedModels || []}  placeholder="Select models"    onChange={(selectedModels) => handleChange('interestedModels', selectedModels)}/>
 
         </div>
 
@@ -209,11 +253,16 @@ const LeadForm: React.FC<LeadFormProps> = ({ onSave }) => {
               placeholder="Credit score"
             />
           </div>
-          <div className='space-y-2'>
-          <Label htmlFor="downPayment" value="Down Payment Amount (optional)" />
-          <TextInput id="downPayment" value={lead.downPayment || ""}  placeholder="Down payment amount" type="number" onChange={(e) => handleChange('downPayment',(e.target.value))} />
-       
-        </div>
+          <div className="space-y-2">
+            <Label htmlFor="downPaymentAmount">Down Payment Amount</Label>
+            <TextInput
+              id="downPaymentAmount"
+              type="number"
+              value={lead.downPaymentAmount || ''}
+              onChange={(e) => handleChange('downPaymentAmount', (e.target.value))}
+              placeholder="Enter down payment amount"
+            />
+          </div>
         {/* <div>
           <Label htmlFor="lastFollowUp" value="Last Follow-up Date" />
           <TextInput id="lastFollowUp" type="date" {...register('lastFollowUp', { required: 'Last follow-up date is required' })} />
@@ -248,19 +297,19 @@ const LeadForm: React.FC<LeadFormProps> = ({ onSave }) => {
           </div>
           
     
-        <div className="space-y-2">
-          <Label htmlFor="priority">Priority Level</Label>
-          <Select
-            id="priority"
-            value={lead.priority || 'Medium'}
-            onChange={(e) => handleChange('priority', e.target.value)}
-          >
-            <option>Select priority</option>
-            {['High', 'Medium', 'Low'].map((priority) => (
-              <option key={priority} value={priority}>{priority}</option>
-            ))}
-          </Select>
-        </div>
+          <div className="space-y-2">
+            <Label htmlFor="priorityLevel">Priority Level</Label>
+            <Select
+              id="priorityLevel"
+              value={lead.priorityLevel || 'Medium'}
+              onChange={(e) => handleChange('priorityLevel', e.target.value)}
+              required
+            >
+              {priorities.map((priority) => (
+                <option key={priority} value={priority}>{priority}</option>
+              ))}
+            </Select>
+          </div>
 
    
         <div className="space-y-2 col-span-full">
@@ -277,35 +326,42 @@ const LeadForm: React.FC<LeadFormProps> = ({ onSave }) => {
 
         {/* Trade-In Checkbox */}
         <div className="flex items-center space-x-2 col-span-full">
-          <Checkbox
-            id="tradeIn"
-            checked={lead.tradeIn || false}
-            onChange={(e) => handleChange('tradeIn', e.target.checked)}
-          />
-          <Label htmlFor="tradeIn">Trade-In</Label>
-        </div>
-
-        {/* Trade-In Details (conditional) */}
-        {lead.tradeIn && (
-          <div className="space-y-2 col-span-full">
-            <Label htmlFor="tradeInDetails">Trade-In Details</Label>
-            <Textarea
-              id="tradeInDetails"
-              name="tradeInDetails"
-              value={lead.tradeInDetails || ''}
-              onChange={(e) => handleChange('tradeInDetails', e.target.value)}
-              placeholder="Provide details about the trade-in vehicle"
-              rows={4}
+            <Checkbox
+              id="tradeInOption"
+              checked={lead.tradeInOption|| false}
+              onChange={(e) => handleChange('tradeInOption', e.target.checked)}
             />
+            <Label htmlFor="tradeIn">Trade-In</Label>
           </div>
-        )}
+
+          {/* Trade-In Details (conditional) */}
+          {lead.tradeInOption && (
+            <div className="space-y-2 col-span-full">
+              <Label htmlFor="tradeInVehicleDetails">Trade-In Details</Label>
+              <Textarea
+                id="tradeInVehicleDetails"
+                name="tradeInVehicleDetails"
+                value={lead.tradeInVehicleDetails || ''}
+                onChange={(e) => handleChange('tradeInVehicleDetails', e.target.value)}
+                placeholder="Provide details about the trade-in vehicle"
+                rows={4}
+              />
+            </div>
+          )}
       </div>
 
       {/* Save Button */}
-      <Button type="submit" color="dark" className="w-full">
-        Save Lead
-      </Button>
+      <Button type="submit" color="dark" className="w-full" disabled={isLoading}>
+          {isLoading ? (
+            <div className="flex items-center justify-center">
+              <Spinner aria-label="Loading..." className="mr-2" /> Saving...
+            </div>
+          ) : (
+            "Save Lead"
+          )}
+        </Button>
     </form>
+    </div>
     </div>
   );
 };

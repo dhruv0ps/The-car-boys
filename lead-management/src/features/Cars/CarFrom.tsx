@@ -2,6 +2,8 @@ import React from 'react'
 import { useForm } from 'react-hook-form'
 import { Button, Checkbox, Label, Select, TextInput, Textarea } from 'flowbite-react'
 import { toast } from 'react-toastify' // If using react-toastify for toast notifications
+import axios from 'axios'
+import { useNavigate } from 'react-router-dom'
 
 // Define feature options
 const featureOptions = [
@@ -38,12 +40,30 @@ type FormData = {
 
 const AddNewCarForm: React.FC = () => {
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>()
+  const navigate = useNavigate();
 
-  const onSubmit = (data: FormData) => {
-    console.log(data)
-    toast.success('Car added successfully', {
-      
-    })
+  const onSubmit = async(data: FormData) => {
+   
+
+    try{
+      const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/vehicles/add`,data)
+      console.log(response.data)
+      if(response.data.status === true){
+        toast.success('Car added successfully', {
+         
+        })
+        navigate("/inventory/view")
+      }
+    }
+   
+    catch (error: any) {
+      // Extract error message
+      const errorMessage = error.response?.data?.message || "An unexpected error occurred";
+  
+      // Display error message in toast
+      toast.error(errorMessage);
+    }
+    
   }
 
   return (
@@ -236,11 +256,11 @@ const AddNewCarForm: React.FC = () => {
         </div>
 
         {/* Date Added to Inventory */}
-        <div>
+        {/* <div>
           <Label htmlFor="dateAdded" value="Date Added to Inventory" />
           <TextInput type="date" id="dateAdded" {...register('dateAdded')} />
           {errors.dateAdded && <p className="text-red-500">{errors.dateAdded.message}</p>}
-        </div>
+        </div> */}
 
         {/* Date Sold */}
         <div>

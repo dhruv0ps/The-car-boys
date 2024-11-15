@@ -19,9 +19,9 @@ router.post("/loginUser",userController.loginUser)
 router.get('/current', authenticateTokenAdmin, userController.getCurrentUser);
 router.post('/logout', authenticateTokenAdmin, userController.logoutUser);
 router.get('/user/:id', authenticateTokenAdmin, userController.getUser);
-router.get('/user/', authenticateTokenAdmin, userController.getAllUsers);
-router.post('/user/', authenticateTokenAdmin, userController.createUser);
-router.post('/user/:id', authenticateTokenAdmin, userController.updateUser);
+router.get('/user/',  userController.getAllUsers);
+router.post('/user/',  userController.createUser);
+router.post('/user/:id',  userController.updateUser);
 
 // lead api
 
