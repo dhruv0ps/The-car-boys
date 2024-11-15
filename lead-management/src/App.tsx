@@ -1,46 +1,77 @@
-import './App.css'
+import './App.css';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
-import LeadForm from './features/Leads/LeadForm'
-import AddNewCarForm from './features/Cars/CarFrom'
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import LeadForm from './features/Leads/LeadForm';
+import AddNewCarForm from './features/Cars/CarFrom';
 import UserForm from './features/User/UserForm';
 import Home from './layout/Home';
 import ListOfLeads from './features/Leads/ListOfLeads';
 import CarList from './features/Cars/CarView';
 import UserTable from './features/User/ListUser';
+import LoginPage from './features/User/Login';
+import ProtectedRoute from './ProtectedRoute';
 const handleSaveLead = (lead: any) => {
   console.log('Saved lead:', lead);
 };
-
 
 // Define routes using createBrowserRouter
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <Home/>,
+    element: (
+      <ProtectedRoute> {/* Wrap Home in ProtectedRoute */}
+        <Home />
+      </ProtectedRoute>
+    ),
     children: [
       {
         path: "/leads/add",
-        element: <LeadForm onSave={handleSaveLead} />,
+        element: (
+          <ProtectedRoute> {/* Wrap each child route in ProtectedRoute */}
+            <LeadForm onSave={handleSaveLead} />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "/inventory/add",
-        element: <AddNewCarForm />,
+        element: (
+          <ProtectedRoute>
+            <AddNewCarForm />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "/users/add",
-        element: <UserForm />,
+        element: (
+          <ProtectedRoute>
+            <UserForm />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "/leads/view",
-        element: <ListOfLeads/>,
+        element: (
+          <ProtectedRoute>
+            <ListOfLeads />
+          </ProtectedRoute>
+        ),
       },
       {
-        path : "/inventory/view",
-        element : <CarList/>,
+        path: "/inventory/view",
+        element: (
+          <ProtectedRoute>
+            <CarList />
+          </ProtectedRoute>
+        ),
       },
       {
-        path : "/users/view",
-        element : <UserTable/>
+        path: "/users/view",
+        element: (
+          <ProtectedRoute>
+            <UserTable />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "*",
@@ -48,11 +79,21 @@ const router = createBrowserRouter([
       },
     ],
   },
+  {
+    path: "/login",
+    element: <LoginPage />,
+  },
 ]);
 
 // Main App component
 function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <>
+      {/* ToastContainer added here to make it available globally */}
+      <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} closeOnClick pauseOnFocusLoss draggable pauseOnHover />
+      <RouterProvider router={router} />
+    </>
+  );
 }
 
 export default App;

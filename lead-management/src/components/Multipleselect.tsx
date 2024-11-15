@@ -2,27 +2,30 @@ import React, { useState } from 'react';
 
 type MultiSelectDropdownProps = {
   options: string[];
-  placeholder: string;
+  value: string[];
+  placeholder?: string;
+  onChange: (selectedOptions: string[]) => void;
 };
 
-const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({ options, placeholder }) => {
+const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({ options, value, placeholder, onChange }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedItems, setSelectedItems] = useState<string[]>([]);
 
   // Toggle the dropdown open/close
   const toggleDropdown = () => setIsOpen(!isOpen);
 
   // Handle item selection
   const handleSelect = (item: string) => {
-    // Only add the item if it hasn't been selected already
-    if (!selectedItems.includes(item)) {
-      setSelectedItems([...selectedItems, item]);
+    if (!value.includes(item)) {
+      const updatedItems = [...value, item];
+      onChange(updatedItems); // Pass the updated selection to the parent component
+      setIsOpen(false); // Close the dropdown after selecting an item
     }
   };
 
   // Handle removing a selected item
   const handleRemove = (item: string) => {
-    setSelectedItems(selectedItems.filter((i) => i !== item));
+    const updatedItems = value.filter((i) => i !== item);
+    onChange(updatedItems); // Pass the updated selection to the parent component
   };
 
   return (
@@ -32,8 +35,7 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({ options, plac
         className="border border-gray-300 p-2 rounded cursor-pointer flex justify-between items-center"
         onClick={toggleDropdown}
       >
-        <span>{selectedItems.length ? `${selectedItems.length} selected` : placeholder}</span>
-        {/* <span className="material-icons">{isOpen ? 'expand_less' : 'expand_more'}</span> */}
+        <span>{value.length ? `${value.length} selected` : placeholder}</span>
       </div>
 
       {/* Dropdown Menu */}
@@ -53,7 +55,7 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({ options, plac
 
       {/* Selected Items Display */}
       <div className="flex flex-wrap gap-2 mt-3">
-        {selectedItems.map((item) => (
+        {value.map((item) => (
           <div
             key={item}
             className="bg-blue-500 text-white px-3 py-1 rounded-full flex items-center"

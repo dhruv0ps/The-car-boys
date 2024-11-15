@@ -52,7 +52,7 @@ async function _login_user_by_email(email, pass) {
     })
 };
 async function _get_all_users() {
-    let users = await User.find({ email: { $ne: 'ADMIN' } })
+    let users = await User.find({ email: { $ne: 'admin@example.com' } })
     return users
 }
 
