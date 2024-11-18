@@ -92,7 +92,7 @@ console.log(response.data)
           </div>
           <div className="px-4 py-4">
             <FlowbiteButton
-              className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-md"
+              className="w-full bg-black text-white font-semibold rounded-md"
               type="submit"
               disabled={isLoading}
             >

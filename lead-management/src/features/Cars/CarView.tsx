@@ -9,7 +9,7 @@ import {
   TableRow,
   Paper,
   IconButton,
-  Pagination,
+
 } from "@mui/material";
 import { Edit, Delete } from "@mui/icons-material";
 import FilterListIcon from "@mui/icons-material/FilterList";
@@ -34,8 +34,9 @@ type Car = {
   transmission: string;
   year: number;
   vehicleId? : string;
-  
+  status? : string;
   _id? : string;
+  price? : string;
 };
 
 const CarList: React.FC = () => {
@@ -51,8 +52,9 @@ const CarList: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showSortOptions, setShowSortOptions] = useState(false);
 const navigate = useNavigate();
+const [statusFilter, setStatusFilter] = useState<string>("");
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 50;
 
   useEffect(() => {
    
@@ -63,21 +65,30 @@ const navigate = useNavigate();
     setLoading(true);
     try {
       const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/vehicles`);
-      if (!response) {
-        throw new Error("Failed to fetch data");
-      }
-      const data: Car[] = await response.data;
-      setCars(data);
-      setFilteredCars(data);
+      const data: Car[] = response.data;
+  
+      // Sort by status: "available" first
+      const sortedData = data.sort((a, b) => {
+        if (a.status === "Available" && b.status !== "Available") return -1;
+        if (a.status !== "Available" && b.status === "Available") return 1;
+        return 0; // Maintain existing order for cars with the same status
+      });
+  
+      setCars(sortedData);
+      setFilteredCars(sortedData); 
     } catch (err) {
       setError((err as Error).message);
     } finally {
       setLoading(false);
     }
   };
+  
 
   useEffect(() => {
     let filtered = cars;
+    if (statusFilter) {
+      filtered = filtered.filter((car) => car.status?.toLowerCase() === statusFilter.toLowerCase());
+    }
 
     // Apply filters
     if (searchQuery) {
@@ -117,14 +128,14 @@ console.log(paginatedData);
 
     setFilteredCars(filtered);
     setCurrentPage(1);
-  }, [searchQuery, yearFilter, fuelTypeFilter, transmissionFilter, sortField, sortOrder, cars]);
+  }, [searchQuery, yearFilter, fuelTypeFilter, transmissionFilter, statusFilter,sortField, sortOrder, cars]);
 
-  const totalPages = Math.ceil(filteredCars.length / itemsPerPage);
+  // const totalPages = Math.ceil(filteredCars.length / itemsPerPage);
   const paginatedData = filteredCars.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  const handlePageChange = (_event: React.ChangeEvent<unknown>, page: number) => {
-    setCurrentPage(page);
-  };
+  // const handlePageChange = (_event: React.ChangeEvent<unknown>, page: number) => {
+  //   setCurrentPage(page);
+  // };
 
   const handleSortFieldChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setSortField(event.target.value as keyof Car);
@@ -222,18 +233,31 @@ console.log(paginatedData);
         <option value="manual">Manual</option>
         <option value="cvt">CVT</option>
       </select>
-      </div>
 
-      {/* Filter Icon to toggle sort options */}
+    
+      </div>
+      <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="p-2 border rounded"
+        >
+          <option value="">Select status</option>
+            <option value="Available">Available</option>
+            <option value="Reserved">Reserved</option>
+            <option value="Sold">Sold</option>
+            <option value="Maintenance">Maintenance</option>
+            <option value="Pending Approval">Pending Approval</option>
+        </select>
+    
       <IconButton
         onClick={() => setShowSortOptions(!showSortOptions)}
-        color="primary"
+        style= {{color: "black"}}
         aria-label="toggle sort options"
       >
         <FilterListIcon />
       </IconButton>
 
-      {/* Sort Options - Visible only if showSortOptions is true */}
+  
       {showSortOptions && (
         <>
           {/* Sort By Field */}
@@ -243,13 +267,10 @@ console.log(paginatedData);
             className="w-full p-2 border rounded-md"
           >
             <option value="">Sort By</option>
-            <option value="make">Make</option>
-            <option value="model">Model</option>
+           
             <option value="year">Year</option>
-            <option value="bodyType">Body Type</option>
-            <option value="engineType">Engine Type</option>
-            <option value="drivetrain">Drive</option>
-            <option value="fuelType">Fuel Type</option>
+           
+            <option value="price">Price</option>
           </select>
 
           {/* Sort Order */}
@@ -278,9 +299,9 @@ console.log(paginatedData);
                 <TableCell style={{ color: 'white',fontWeight: 'bold' }} className="whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">Engine Type</TableCell>
                 <TableCell style={{ color: 'white',fontWeight: 'bold' }} className="whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">Drive</TableCell>
                 <TableCell style={{ color: 'white',fontWeight: 'bold' }} className="whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">Fuel Type</TableCell>
-                {/* <TableCell style={{ color: 'white',fontWeight: 'bold' }} className="whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">Mileage</TableCell> */}
+                <TableCell style={{ color: 'white',fontWeight: 'bold' }} className="whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">Price</TableCell>
                 <TableCell style={{ color: 'white',fontWeight: 'bold' }} className="whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">Color</TableCell>
-                <TableCell style={{ color: 'white',fontWeight: 'bold' }} className="whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">Condition</TableCell>
+                <TableCell style={{ color: 'white',fontWeight: 'bold' }} className="whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">Status</TableCell>
                 <TableCell style={{ color: 'white',fontWeight: 'bold' }} className="whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">Transmission</TableCell>
                 <TableCell style={{ color: 'white',fontWeight: 'bold' }} className="whitespace-nowrap overflow-hidden text-ellipsis max-w-xs"> Action</TableCell>
               </TableRow>
@@ -305,18 +326,26 @@ console.log(paginatedData);
         <TableCell>{car.engineType}</TableCell>
         <TableCell>{car.drivetrain}</TableCell>
         <TableCell>{car.fuelType}</TableCell>
+        <TableCell>${car.price}</TableCell>
         <TableCell>{car.color}</TableCell>
         <TableCell className="whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">
-          {car.condition}
+          {car.status}
         </TableCell>
         <TableCell>{car.transmission}</TableCell>
         <TableCell className="whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">
-          <IconButton color="primary" onClick={() => navigate(`/inventory/add/${car._id}`)}>
-            <Edit fontSize="small" />
-          </IconButton>
-          <IconButton color="secondary" onClick={() => handleDeleteChild((car._id!))}>
-            <Delete fontSize="small" />
-          </IconButton>
+        <IconButton
+  style={{ color: "black" }} // Black color for the Edit button
+  onClick={() => navigate(`/inventory/add/${car._id}`)}
+>
+  <Edit fontSize="small" />
+</IconButton>
+<IconButton
+  style={{ color: "red" }} // Red color for the Delete button
+  onClick={() => handleDeleteChild(car._id!)}
+>
+  <Delete fontSize="small" />
+</IconButton>
+
         </TableCell>
       </TableRow>
     ))
@@ -327,13 +356,13 @@ console.log(paginatedData);
         </TableContainer>
 
         {/* Pagination Controls */}
-        <Pagination
+        {/* <Pagination
           count={totalPages}
           page={currentPage}
           onChange={handlePageChange}
           color="primary"
           style={{ display: "flex", justifyContent: "center", marginTop: "16px" }}
-        />
+        /> */}
       </div>
     </div>
   );

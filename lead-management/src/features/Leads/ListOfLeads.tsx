@@ -8,7 +8,7 @@ import {
   TableRow,
   Paper,
   IconButton,
-  Pagination
+ 
 } from "@mui/material";
 import { Edit, Delete } from "@mui/icons-material";
 import axios from "axios";
@@ -17,6 +17,7 @@ import debounce from 'lodash/debounce';
 import showConfirmationModal from "../../components/confirmationUtil";
 import { toast } from "react-toastify";
 import { FaChevronLeft } from "react-icons/fa";
+import { ArrowDropUp, ArrowDropDown } from "@mui/icons-material";
 type Lead = {
   leadId?: string;
   id?: string;
@@ -41,13 +42,13 @@ const ListOfLeads: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [leadSourceFilter, setLeadSourceFilter] = useState<string>("");
-  const [minPrice, setMinPrice] = useState<number | "">("");
-  const [maxPrice, setMaxPrice] = useState<number | "">("");
+  const [minPrice, _setMinPrice] = useState<number | "">("");
+  const [maxPrice, _setMaxPrice] = useState<number | "">("");
   const [priorityFilter, _setPriorityFilter] = useState<string>("");
   const [sortField, setSortField] = useState<keyof Lead>("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const itemsPerPage = 5;
+  const itemsPerPage = 20;
 const navigate = useNavigate();
 
   useEffect(() => {
@@ -58,11 +59,22 @@ const navigate = useNavigate();
   const fetchData = async () => {
     try {
       const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/leads`);
-      setLeads(response.data.data);
+      const fetchedLeads = response.data.data;
+  
+      // Sort by createdDate in descending order
+      const sortedLeads = fetchedLeads.sort((a: { createdDate?: string }, b: { createdDate?: string }) => {
+        const dateA = a.createdDate ? new Date(a.createdDate).getTime() : 0; // Default to 0 if createdDate is missing
+        const dateB = b.createdDate ? new Date(b.createdDate).getTime() : 0; // Default to 0 if createdDate is missing
+        return dateB - dateA;
+      });
+  
+      setLeads(sortedLeads);
     } catch (error) {
       console.error("Error fetching leads:", error);
     }
   };
+  
+  
 
   const handleSort = (field: keyof Lead) => {
     if (sortField === field) {
@@ -73,9 +85,9 @@ const navigate = useNavigate();
     }
   };
 
-  const handlePageChange = (_event: React.ChangeEvent<unknown>, page: number) => {
-    setCurrentPage(page);
-  };
+  // const handlePageChange = (_event: React.ChangeEvent<unknown>, page: number) => {
+  //   setCurrentPage(page);
+  // };
 
   // Debounced function for live search
   const debouncedSearch = debounce((query: string) => {
@@ -95,22 +107,23 @@ const navigate = useNavigate();
         ? lead.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           lead.manager.toLowerCase().includes(searchQuery.toLowerCase()) ||
           lead.leadId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          lead.phoneNumber.includes(searchQuery)
+          lead.phoneNumber.trim().includes(searchQuery.trim())
         : true;
 
       return matchesStatus && matchesLeadSource && matchesMinPrice && matchesMaxPrice && matchesPriority && matchesSearchQuery;
     })
     .sort((a, b) => {
-      const aField = a[sortField] as string | number;
-      const bField = b[sortField] as string | number;
-
+      const aField = sortField === "lastFollowUp" ? new Date(a.lastFollowUp) : a[sortField] as string | number;
+      const bField = sortField === "lastFollowUp" ? new Date(b.lastFollowUp) : b[sortField] as string | number;
+    
       if (aField < bField) return sortOrder === "asc" ? -1 : 1;
       if (aField > bField) return sortOrder === "asc" ? 1 : -1;
       return 0;
     });
+    
 
   // Paginate filtered data
-  const totalPages = Math.ceil(filteredLeads.length / itemsPerPage);
+  // const totalPages = Math.ceil(filteredLeads.length / itemsPerPage);
   const paginatedLeads = filteredLeads.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
@@ -126,6 +139,14 @@ const navigate = useNavigate();
     } catch (error) {
       toast.error("Failed to delete the lead. Please try again.");
     }
+  };
+  const getSortIcon = (field: keyof Lead) => {
+    if (sortField === field) {
+      // Show the active arrow for the sorted column
+      return sortOrder === "asc" ? <ArrowDropUp fontSize="small" /> : <ArrowDropDown fontSize="small" />;
+    }
+    // Default inactive arrow for unsorted columns
+    return <ArrowDropUp fontSize="small" style={{ color: "white", opacity: 1 }} />;
   };
   
   return (
@@ -228,62 +249,53 @@ const navigate = useNavigate();
         </div>
 
         {/* Min Price Filter */}
-        <div style={{ flex: "0 1 200px", display: "flex", flexDirection: "column" }}>
-          <label htmlFor="minPrice" className="text-gray-700 font-medium mb-1">
-            Min Price
-          </label>
-          <input
-            type="number"
-            id="minPrice"
-            value={minPrice}
-            onChange={(e) => setMinPrice(e.target.value === "" ? "" : Number(e.target.value))}
-            placeholder="Min Price"
-            style={{
-              padding: "8px",
-              borderRadius: "4px",
-              border: "1px solid #ccc",
-              width: "100%",
-            }}
-          />
-        </div>
-
-        {/* Max Price Filter */}
-        <div style={{ flex: "0 1 200px", display: "flex", flexDirection: "column" }}>
-          <label htmlFor="maxPrice" className="text-gray-700 font-medium mb-1">
-            Max Price
-          </label>
-          <input
-            type="number"
-            id="maxPrice"
-            value={maxPrice}
-            onChange={(e) => setMaxPrice(e.target.value === "" ? "" : Number(e.target.value))}
-            placeholder="Max Price"
-            style={{
-              padding: "8px",
-              borderRadius: "4px",
-              border: "1px solid #ccc",
-              width: "100%",
-            }}
-          />
-        </div>
+        
       </div>
 
       {/* Table */}
       <TableContainer component={Paper}>
         <Table>
-          <TableHead>
-          <TableRow style={{ backgroundColor: 'black', color: 'white' }}>
-  <TableCell style={{ color: 'white', fontWeight: 'bold' }} onClick={() => handleSort("leadId")}>ID</TableCell>
-  <TableCell style={{ color: 'white', fontWeight: 'bold' }} onClick={() => handleSort("name")}>Name</TableCell>
-  <TableCell style={{ color: 'white', fontWeight: 'bold' }} onClick={() => handleSort("status")}>Status</TableCell>
-  <TableCell style={{ color: 'white', fontWeight: 'bold' }} onClick={() => handleSort("manager")}>Manager</TableCell>
-  <TableCell style={{ color: 'white', fontWeight: 'bold' }} onClick={() => handleSort("phoneNumber")}>Phone Number</TableCell>
-  <TableCell style={{ color: 'white', fontWeight: 'bold' }} onClick={() => handleSort("leadSource")}>Lead Source</TableCell>
-  <TableCell style={{ color: 'white', fontWeight: 'bold' }} onClick={() => handleSort("budget")}>Budget</TableCell>
-  <TableCell style={{ color: 'white', fontWeight: 'bold' }}>Actions</TableCell>
-</TableRow>
+       
 
-          </TableHead>
+        <TableHead>
+  <TableRow style={{ backgroundColor: "black", color: "white" }}>
+    {/* ID Header with Sort Arrow */}
+    <TableCell
+      style={{ color: "white", fontWeight: "bold", cursor: "pointer" }} // Always pointer
+      onClick={() => handleSort("leadId")}
+    >
+      ID {getSortIcon("leadId")}
+    </TableCell>
+
+    {/* Name Header with Sort Arrow */}
+    <TableCell
+      style={{ color: "white", fontWeight: "bold", cursor: "pointer" }} // Always pointer
+      onClick={() => handleSort("name")}
+    >
+      Name {getSortIcon("name")}
+    </TableCell>
+
+    {/* Other headers */}
+    <TableCell style={{ color: "white", fontWeight: "bold" }}>Status</TableCell>
+    <TableCell style={{ color: "white", fontWeight: "bold" }}>Manager</TableCell>
+    <TableCell style={{ color: "white", fontWeight: "bold" }}>Phone Number</TableCell>
+    <TableCell style={{ color: "white", fontWeight: "bold" }}>Lead Source</TableCell>
+    <TableCell style={{ color: "white", fontWeight: "bold" }}>Budget</TableCell>
+
+    {/* Last Follow-Up Header with Sort Arrow */}
+    <TableCell
+      style={{ color: "white", fontWeight: "bold", cursor: "pointer" }} // Always pointer
+      onClick={() => handleSort("lastFollowUp")}
+    >
+      Last Follow-Up {getSortIcon("lastFollowUp")}
+    </TableCell>
+
+    {/* Actions Column */}
+    <TableCell style={{ color: "white", fontWeight: "bold" }}>Actions</TableCell>
+  </TableRow>
+</TableHead>
+
+
           <TableBody>
             {paginatedLeads.map((lead) => (
               <TableRow key={lead.id}>
@@ -294,14 +306,17 @@ const navigate = useNavigate();
                 <TableCell>{lead.phoneNumber}</TableCell>
                 <TableCell>{lead.leadSource}</TableCell>
                 <TableCell>${lead.budget.toLocaleString()}</TableCell>
+                <TableCell>{lead.lastFollowUp.slice(0,10)}</TableCell>
                 <TableCell>
-                  <IconButton color="primary" onClick={() => navigate(`/leads/add/${lead._id}`)}>
+                  <IconButton  style={{ color: "black" }}  onClick={() => navigate(`/leads/add/${lead._id}`)}>
                     <Edit />
                   </IconButton>
-                  <IconButton color="secondary" onClick={() => handleDelete((lead._id!))}>
+                  <IconButton style={{ color: "red" }} onClick={() => handleDelete((lead._id!))}>
                     <Delete />
                   </IconButton>
+                 
                 </TableCell>
+            
               </TableRow>
             ))}
           </TableBody>
@@ -309,13 +324,13 @@ const navigate = useNavigate();
       </TableContainer>
 
       {/* Pagination */}
-      <Pagination
+      {/* <Pagination
         count={totalPages}
         page={currentPage}
         onChange={handlePageChange}
         color="primary"
         style={{ display: "flex", justifyContent: "center", marginTop: "16px" }}
-      />
+      /> */}
     </div>
   );
 };

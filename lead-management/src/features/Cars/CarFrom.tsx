@@ -91,7 +91,7 @@ const AddNewCarForm: React.FC = () => {
         toast.success('Car details updated successfully!');
       } else {
         // Add new car
-        await axios.post(`${import.meta.env.VITE_BACKEND_URL}/vehicles`, data);
+        await axios.post(`${import.meta.env.VITE_BACKEND_URL}/vehicles/add`, data);
         toast.success('New car added successfully!');
       }
       navigate('/inventory/view'); // Navigate back to the list
