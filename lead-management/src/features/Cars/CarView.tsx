@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Spinner } from "flowbite-react";
 import {
   Table,
   TableBody,
@@ -285,31 +286,43 @@ console.log(paginatedData);
               </TableRow>
             </TableHead>
             <TableBody>
-              {paginatedData.map((car, index) => (
-                <TableRow key={index} hover>
-                    <TableCell  className="whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{car.vehicleId}</TableCell>
-                  <TableCell>{car.make}</TableCell>
-                  <TableCell>{car.model}</TableCell>
-                  <TableCell>{car.year}</TableCell>
-                  <TableCell>{car.bodyType}</TableCell>
-                  <TableCell>{car.engineType}</TableCell>
-                  <TableCell>{car.drivetrain}</TableCell>
-                  <TableCell>{car.fuelType}</TableCell>
-                  {/* <TableCell>{car.mileage}</TableCell> */}
-                  <TableCell>{car.color}</TableCell>
-                  <TableCell  className="whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{car.condition}</TableCell>
-                  <TableCell>{car.transmission}</TableCell>
-                  <TableCell className="whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">
-                    <IconButton color="primary" onClick={() => navigate(`/inventory/add/${car._id}`)}>
-                      <Edit fontSize="small" />
-                    </IconButton>
-                    <IconButton color="secondary" onClick={() => handleDeleteChild((car._id!))}>
-                      <Delete fontSize="small" />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
+  {loading ? (
+    <TableRow>
+      <TableCell colSpan={12} className="text-center py-4">
+        <Spinner aria-label="Loading..." size="lg" />
+      </TableCell>
+    </TableRow>
+  ) : (
+    paginatedData.map((car, index) => (
+      <TableRow key={index} hover>
+        <TableCell className="whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">
+          {car.vehicleId}
+        </TableCell>
+        <TableCell>{car.make}</TableCell>
+        <TableCell>{car.model}</TableCell>
+        <TableCell>{car.year}</TableCell>
+        <TableCell>{car.bodyType}</TableCell>
+        <TableCell>{car.engineType}</TableCell>
+        <TableCell>{car.drivetrain}</TableCell>
+        <TableCell>{car.fuelType}</TableCell>
+        <TableCell>{car.color}</TableCell>
+        <TableCell className="whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">
+          {car.condition}
+        </TableCell>
+        <TableCell>{car.transmission}</TableCell>
+        <TableCell className="whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">
+          <IconButton color="primary" onClick={() => navigate(`/inventory/add/${car._id}`)}>
+            <Edit fontSize="small" />
+          </IconButton>
+          <IconButton color="secondary" onClick={() => handleDeleteChild((car._id!))}>
+            <Delete fontSize="small" />
+          </IconButton>
+        </TableCell>
+      </TableRow>
+    ))
+  )}
+</TableBody>
+
           </Table>
         </TableContainer>
 
