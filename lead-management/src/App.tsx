@@ -11,9 +11,7 @@ import CarList from './features/Cars/CarView';
 import UserTable from './features/User/ListUser';
 import LoginPage from './features/User/Login';
 import ProtectedRoute from './ProtectedRoute';
-const handleSaveLead = (lead: any) => {
-  console.log('Saved lead:', lead);
-};
+
 
 // Define routes using createBrowserRouter
 const router = createBrowserRouter([
@@ -29,12 +27,29 @@ const router = createBrowserRouter([
         path: "/leads/add",
         element: (
           <ProtectedRoute> {/* Wrap each child route in ProtectedRoute */}
-            <LeadForm onSave={handleSaveLead} />
+            <LeadForm  />
           </ProtectedRoute>
         ),
       },
       {
+        path: "/leads/add/:id",
+        element: (
+          <ProtectedRoute> {/* Wrap each child route in ProtectedRoute */}
+            <LeadForm />
+          </ProtectedRoute>
+        ),
+      },
+      
+      {
         path: "/inventory/add",
+        element: (
+          <ProtectedRoute>
+            <AddNewCarForm />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/inventory/add/:id",
         element: (
           <ProtectedRoute>
             <AddNewCarForm />
@@ -65,6 +80,7 @@ const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
+
       {
         path: "/users/view",
         element: (

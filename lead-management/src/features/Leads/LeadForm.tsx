@@ -1,49 +1,76 @@
-import React, { useState } from 'react';
-import { Button } from 'flowbite-react';
-import { Label, TextInput, Select, Textarea, Checkbox,Spinner } from 'flowbite-react';
-import MultiSelectDropdown from '../../components/Multipleselect';
-import axios from 'axios';
-import { toast } from 'react-toastify';
-import { useNavigate } from 'react-router-dom';
-// import { FaChevronLeft } from 'react-icons/fa';
-type LeadFormProps = {
-  onSave: (lead: Lead) => void;
+import React, { useEffect, useState } from "react";
+import { Button, Label, TextInput, Select, Textarea, Checkbox, Spinner } from "flowbite-react";
+import MultiSelectDropdown from "../../components/Multipleselect";
+import axios from "axios";
+import { toast } from "react-toastify";
+import { useNavigate, useParams } from "react-router-dom";
+import { FaChevronLeft } from "react-icons/fa";
+type Lead = {
+  id: string;
+  status: string;
+  month: string;
+  manager: string;
+  name: string;
+  phoneNumber: string;
+  email?: string;
+  leadSource: string;
+  interestedModels: string[];
+  budget?: number;
+  paymentPlan: string;
+  creditScore?: number;
+  priorityLevel: string;
+  generalComments?: string;
+  tradeInOption: boolean;
+  tradeInVehicleDetails?: string;
+  downPaymentAmount?: number;
+  lastFollowUp?: string;
+  nextFollowUp?: string;
+  assignedTo?: string;
 };
 
-type Lead = {
-    id: string;
-    status: string;
-    month: string;
-    manager: string;
-    name: string;
-    phoneNumber: string;
-    email?: string;
-    leadSource: string;
-    interestedModels: string[];
-    budget?: number;
-    paymentPlan: string;
-    creditScore? : number;
-    priorityLevel: string;
-    comments?: string;
-    tradeInOption: boolean;
-    tradeInVehicleDetails?: string;
-    downPaymentAmount? : number;
-    lastFollowUp? : string,
-    nextFollowUp?: string;
-  assignedTo?: string;
-
-  };
-
-const LeadForm: React.FC<LeadFormProps> = ({ onSave }) => {
+const LeadForm: React.FC = () => {
+  const { id } = useParams<{ id: string }>(); // Get the id from the URL
+  const navigate = useNavigate();
   const [lead, setLead] = useState<Partial<Lead>>({
-    status: 'New',
+    status: "New",
     month: new Date().toISOString().slice(0, 7),
     tradeInOption: false,
-    priorityLevel: 'Medium',
-    interestedModels: [] 
+    priorityLevel: "Medium",
+    interestedModels: [],
   });
-  const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false); 
+  const [isLoading, setIsLoading] = useState(false);
+  const [_isFetching, setIsFetching] = useState(false); // To handle loading for fetching data
+  const formatToDateInput = (isoString: string | undefined) =>
+    isoString ? isoString.split("T")[0] : ""; // Extract YYYY-MM-DD part
+  const models = ["Mustang", "Civic", "Accord", "Camry", "Corolla"];
+  const priorities = ["High", "Medium", "Low"];
+
+  // Fetch data if an ID exists (for editing)
+  useEffect(() => {
+    if (id) {
+      fetchLeadData();
+    }
+  }, [id]);
+
+  const fetchLeadData = async () => {
+    setIsFetching(true);
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/leads/${id}`);
+      const data = response.data.data;
+    setLead({
+      ...data,
+      month: data.month ? data.month.slice(0, 7) : "",
+      lastFollowUp: formatToDateInput(data.lastFollowUp),
+      nextFollowUp: formatToDateInput(data.nextFollowUp),
+    });
+      console.log(response.data)
+    } catch (error) {
+      console.error("Failed to fetch lead data:", error);
+      toast.error("Failed to fetch lead data. Please try again.");
+    } finally {
+      setIsFetching(false);
+    }
+  };
 
   const handleChange = (name: string, value: string | boolean | string[] | number) => {
     setLead((prevLead) => ({
@@ -54,36 +81,48 @@ const LeadForm: React.FC<LeadFormProps> = ({ onSave }) => {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-   setIsLoading(true);
-    try{
-      const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/addlead`,lead)
-      console.log(response)
-      if(response.status === 201) {
-        toast.success("Lead saved successfully")
-        navigate("/leads/view")
-        onSave(lead as Lead);
-        setLead({
-          status: 'New',
-          month: new Date().toISOString().slice(0, 7),
-          tradeInOption: false,
-          priorityLevel: 'Medium',
-          interestedModels: [] 
-        });
+    setIsLoading(true);
+    
+    try {
+      if (id) {
+        // Update existing lead
+        const response = await axios.put(`${import.meta.env.VITE_BACKEND_URL}/leads/${id}`, lead);
+        if (response.status === 200) {
+          toast.success("Lead updated successfully");
+          navigate("/leads/view");
+        }
+      } else {
+        // Add new lead
+        const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/addlead`, lead);
+        if (response.status === 201) {
+          toast.success("Lead saved successfully");
+          navigate("/leads/view");
+          setLead({
+            status: "New",
+            month: new Date().toISOString().slice(0, 7),
+            tradeInOption: false,
+            priorityLevel: "Medium",
+            interestedModels: [],
+          });
+        }
       }
-      
-    }
-    catch (error) {
-      console.error('Error saving lead:', error);
+    } catch (error) {
+      console.error("Error saving lead:", error);
       toast.error("Failed to save lead. Please try again.");
     } finally {
-      setIsLoading(false); // Set loading to false after submission completes
+      setIsLoading(false);
     }
   };
-  const models = ['Mustang', 'Civic', 'Accord', 'Camry', 'Corolla'];
-  const priorities = ['High', 'Medium', 'Low'];
 
   return (
     <div>
+               <button
+        onClick={() => navigate(-1)}
+        className="flex items-center gap-2 px-4 py-2 ml-6 bg-black rounded-md hover:bg-black"
+      >
+         <FaChevronLeft size={16} style={{ color: "white" }} /> {/* Back Icon */}
+         <span style={{ color: "white" }}>Back</span>
+      </button>
       <div className="mb-8 flex items-center justify-between">
     {/* <Button  onClick={() => navigate(-1)} className="flex items-center gap-2">
       <FaChevronLeft /><span style={{color:"black"}}>Back</span> 
@@ -131,17 +170,17 @@ const LeadForm: React.FC<LeadFormProps> = ({ onSave }) => {
         <div className="space-y-2">
           <Label htmlFor="manager">Manager</Label>
           <Select
-            id="manager"
-            onChange={(e) => handleChange("manager", e.target.value)}
-            required
-          >
-            <option value="">Select Manager</option>
-            <option value="Rajat">Rajat</option>
-            <option value="Tanveer">Tanveer</option>
-            <option value="Vipash">Vipash</option>
-            
+  id="manager"
+  value={lead.manager || ""} // Default to an empty string if undefined
+  onChange={(e) => handleChange("manager", e.target.value)}
+  required
+>
+  <option value="">Select Manager</option>
+  <option value="Rajat">Rajat</option>
+  <option value="Tanveer">Tanveer</option>
+  <option value="Vipash">Vipash</option>
+</Select>
 
-          </Select>
         </div>
 
         {/* Name */}
@@ -286,7 +325,8 @@ const LeadForm: React.FC<LeadFormProps> = ({ onSave }) => {
             <Label htmlFor="assignedTo">Assigned To</Label>
             <Select
               id="assignedTo"
-              value={lead.assignedTo || ''}
+              value={lead.
+                assignedTo || ''}
               onChange={(e) => handleChange('assignedTo', e.target.value)}
             >
               <option>Select sales representative</option>
@@ -315,10 +355,10 @@ const LeadForm: React.FC<LeadFormProps> = ({ onSave }) => {
         <div className="space-y-2 col-span-full">
           <Label htmlFor="comments">General Comments</Label>
           <Textarea
-            id="comments"
-            name="comments"
-            value={lead.comments || ''}
-            onChange={(e) => handleChange('comments', e.target.value)}
+            id=" generalComments"
+            name=" generalComments"
+            value={lead.generalComments || ''}
+            onChange={(e) => handleChange('generalComments', e.target.value)}
             placeholder="Additional notes or comments"
             rows={4}
           />

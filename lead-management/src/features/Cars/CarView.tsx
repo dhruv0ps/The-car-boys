@@ -12,9 +12,11 @@ import {
 } from "@mui/material";
 import { Edit, Delete } from "@mui/icons-material";
 import FilterListIcon from "@mui/icons-material/FilterList";
-
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
-
+import showConfirmationModal from "../../components/confirmationUtil";
+import { toast } from "react-toastify";
+import { FaChevronLeft } from "react-icons/fa";
 type Car = {
   city_mpg: number;
   class: string;
@@ -30,6 +32,9 @@ type Car = {
   model: string;
   transmission: string;
   year: number;
+  vehicleId? : string;
+  
+  _id? : string;
 };
 
 const CarList: React.FC = () => {
@@ -44,30 +49,31 @@ const CarList: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [showSortOptions, setShowSortOptions] = useState(false);
-
+const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState<number>(1);
   const itemsPerPage = 10;
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/vehicles`);
-        if (!response) {
-          throw new Error("Failed to fetch data");
-        }
-        const data: Car[] = await response.data;
-        setCars(data);
-        setFilteredCars(data);
-      } catch (err) {
-        setError((err as Error).message);
-      } finally {
-        setLoading(false);
-      }
-    };
+   
 
     fetchData();
   }, []);
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/vehicles`);
+      if (!response) {
+        throw new Error("Failed to fetch data");
+      }
+      const data: Car[] = await response.data;
+      setCars(data);
+      setFilteredCars(data);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     let filtered = cars;
@@ -75,7 +81,9 @@ const CarList: React.FC = () => {
     // Apply filters
     if (searchQuery) {
       filtered = filtered.filter(car =>
-        car.model.toLowerCase().includes(searchQuery.toLowerCase())
+        (`${car.make} ${car.model} ${car.vehicleId}`.toLowerCase().includes(searchQuery.toLowerCase()))
+      
+
       );
     }
     if (yearFilter) {
@@ -87,7 +95,7 @@ const CarList: React.FC = () => {
     if (transmissionFilter) {
       filtered = filtered.filter(car => car.transmission.toLowerCase() === transmissionFilter.toLowerCase());
     }
-
+console.log(paginatedData);
     // Apply sorting if a field is selected
     if (sortField) {
       filtered = filtered.sort((a, b) => {
@@ -125,11 +133,42 @@ const CarList: React.FC = () => {
     setSortOrder(event.target.value as "asc" | "desc");
   };
 
+  const handleDeleteChild = async (id: string) => {
+    const confirm = await showConfirmationModal("Are you sure you want to delete the car?");
+    if (!confirm) return;
+
+    try {
+      await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/vehicles/${id}`);
+      toast.success("Car deleted successfully!");
+      await fetchData();
+    } catch (error) {
+      toast.error("Failed to delete the car. Please try again.");
+    }
+  };
+
   if (loading) return <p>Loading...</p>;
   if (error) return <p>Error: {error}</p>;
 
   return (
-    <div>
+    <div style={{padding: "20px"}}>
+         <div className="flex items-center justify-between mb-4">
+      {/* Back Button */}
+      <button
+        onClick={() => navigate(-1)}
+        className="flex items-center gap-2 px-4 py-2 bg-black rounded-md hover:bg-gray-800"
+      >
+        <FaChevronLeft size={16} style={{ color: "white" }} />
+        <span style={{ color: "white" }}>Back</span>
+      </button>
+
+      {/* Add New Lead Button */}
+      <button
+        onClick={() => navigate("/inventory/add")}
+        className="px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800"
+      >
+        Add New Car
+      </button>
+    </div>
       <div className="container mx-auto p-4">
         <h2 className="text-2xl font-semibold mb-4">Car List</h2>
 
@@ -230,23 +269,25 @@ const CarList: React.FC = () => {
           <Table>
             <TableHead>
               <TableRow style={{ backgroundColor: 'black', color: 'white' }}>
-                <TableCell style={{ color: 'white',fontWeight: 'bold' }}>Make</TableCell>
-                <TableCell style={{ color: 'white',fontWeight: 'bold' }}>Model</TableCell>
-                <TableCell style={{ color: 'white',fontWeight: 'bold' }}>Year</TableCell>
-                <TableCell style={{ color: 'white',fontWeight: 'bold' }}>Body Type</TableCell>
-                <TableCell style={{ color: 'white',fontWeight: 'bold' }}>Engine Type</TableCell>
-                <TableCell style={{ color: 'white',fontWeight: 'bold' }}>Drive</TableCell>
-                <TableCell style={{ color: 'white',fontWeight: 'bold' }}>Fuel Type</TableCell>
-                <TableCell style={{ color: 'white',fontWeight: 'bold' }}>Mileage</TableCell>
-                <TableCell style={{ color: 'white',fontWeight: 'bold' }}>Color</TableCell>
-                <TableCell style={{ color: 'white',fontWeight: 'bold' }}>Condition</TableCell>
-                <TableCell style={{ color: 'white',fontWeight: 'bold' }}>Transmission</TableCell>
-                <TableCell style={{ color: 'white',fontWeight: 'bold' }}>Action</TableCell>
+              <TableCell style={{ color: 'white',fontWeight: 'bold' }} className="whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">Vehicle ID</TableCell>
+                <TableCell style={{ color: 'white',fontWeight: 'bold' }} className="whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">Make</TableCell>
+                <TableCell style={{ color: 'white',fontWeight: 'bold' }} className="whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">Model</TableCell>
+                <TableCell style={{ color: 'white',fontWeight: 'bold' }} className="whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">Year</TableCell>
+                <TableCell style={{ color: 'white',fontWeight: 'bold' }} className="whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">Body Type</TableCell>
+                <TableCell style={{ color: 'white',fontWeight: 'bold' }} className="whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">Engine Type</TableCell>
+                <TableCell style={{ color: 'white',fontWeight: 'bold' }} className="whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">Drive</TableCell>
+                <TableCell style={{ color: 'white',fontWeight: 'bold' }} className="whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">Fuel Type</TableCell>
+                {/* <TableCell style={{ color: 'white',fontWeight: 'bold' }} className="whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">Mileage</TableCell> */}
+                <TableCell style={{ color: 'white',fontWeight: 'bold' }} className="whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">Color</TableCell>
+                <TableCell style={{ color: 'white',fontWeight: 'bold' }} className="whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">Condition</TableCell>
+                <TableCell style={{ color: 'white',fontWeight: 'bold' }} className="whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">Transmission</TableCell>
+                <TableCell style={{ color: 'white',fontWeight: 'bold' }} className="whitespace-nowrap overflow-hidden text-ellipsis max-w-xs"> Action</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {paginatedData.map((car, index) => (
                 <TableRow key={index} hover>
+                    <TableCell  className="whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{car.vehicleId}</TableCell>
                   <TableCell>{car.make}</TableCell>
                   <TableCell>{car.model}</TableCell>
                   <TableCell>{car.year}</TableCell>
@@ -254,15 +295,15 @@ const CarList: React.FC = () => {
                   <TableCell>{car.engineType}</TableCell>
                   <TableCell>{car.drivetrain}</TableCell>
                   <TableCell>{car.fuelType}</TableCell>
-                  <TableCell>{car.mileage}</TableCell>
+                  {/* <TableCell>{car.mileage}</TableCell> */}
                   <TableCell>{car.color}</TableCell>
-                  <TableCell>{car.condition}</TableCell>
+                  <TableCell  className="whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{car.condition}</TableCell>
                   <TableCell>{car.transmission}</TableCell>
-                  <TableCell>
-                    <IconButton color="primary">
+                  <TableCell className="whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">
+                    <IconButton color="primary" onClick={() => navigate(`/inventory/add/${car._id}`)}>
                       <Edit fontSize="small" />
                     </IconButton>
-                    <IconButton color="secondary">
+                    <IconButton color="secondary" onClick={() => handleDeleteChild((car._id!))}>
                       <Delete fontSize="small" />
                     </IconButton>
                   </TableCell>

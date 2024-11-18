@@ -1,10 +1,12 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form'
+import { useParams } from 'react-router-dom'
+
 import { Button, Checkbox, Label, Select, TextInput, Textarea } from 'flowbite-react'
 import { toast } from 'react-toastify' // If using react-toastify for toast notifications
 import axios from 'axios'
 import { useNavigate } from 'react-router-dom'
-
+import { FaChevronLeft } from "react-icons/fa";
 // Define feature options
 const featureOptions = [
   { id: 'leatherSeats', label: 'Leather Seats' },
@@ -36,39 +38,81 @@ type FormData = {
   inspectionDate : string,
   dateAdded : string,
   dateSold : string,
+  id? : string
 }
 
 const AddNewCarForm: React.FC = () => {
-  const { register, handleSubmit, formState: { errors } } = useForm<FormData>()
+  const { id } = useParams<{ id: string }>();
+  const { register, handleSubmit,setValue, formState: { errors } } = useForm<FormData>()
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
 
-  const onSubmit = async(data: FormData) => {
-   
+  useEffect(() => {
+    if (id) {
+      fetchUpdatedCar(id);
+    }
+  }, [id]);
 
-    try{
-      const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/vehicles/add`,data)
-      console.log(response.data)
-      if(response.data.status === true){
-        toast.success('Car added successfully', {
-         
-        })
-        navigate("/inventory/view")
+  const fetchUpdatedCar = async (id: string) => {
+    setIsLoading(true);
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/vehicles/${id}`);
+      const carData = response.data;
+
+      // Pre-fill form fields with fetched data
+      Object.keys(carData).forEach((key) => {
+        // Special handling for inspectionDate to convert ISO to YYYY-MM-DD
+        if (key === 'inspectionDate' && carData[key]) {
+          const date = new Date(carData[key]).toISOString().split('T')[0];
+          setValue(key as keyof FormData, date);
+        } else {
+          setValue(key as keyof FormData, carData[key]);
+        }
+      });
+    } catch (error) {
+      toast.error('Failed to fetch car details. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const onSubmit = async (data: FormData) => {
+    try {
+      setIsLoading(true);
+
+      // Convert inspectionDate back to ISO format if it exists
+      if (data.inspectionDate) {
+        data.inspectionDate = new Date(data.inspectionDate).toISOString();
       }
+
+      if (id) {
+        // Update car
+        await axios.put(`${import.meta.env.VITE_BACKEND_URL}/vehicles/${id}`, data);
+        toast.success('Car details updated successfully!');
+      } else {
+        // Add new car
+        await axios.post(`${import.meta.env.VITE_BACKEND_URL}/vehicles`, data);
+        toast.success('New car added successfully!');
+      }
+      navigate('/inventory/view'); // Navigate back to the list
+    } catch (error) {
+      toast.error('Failed to save car details. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
-   
-    catch (error: any) {
-      // Extract error message
-      const errorMessage = error.response?.data?.message || "An unexpected error occurred";
-  
-      // Display error message in toast
-      toast.error(errorMessage);
-    }
-    
-  }
+  };
 
   return (
+    <div>
+<button
+        onClick={() => navigate(-1)}
+        className="flex items-center gap-2 px-4 py-2  ml-6  bg-black rounded-md hover:bg-black"
+      >
+        <FaChevronLeft size={16} style={{ color: "white" }} /> {/* Back Icon */}
+        <span style={{ color: "white" }}>Back</span>
+      </button>
     <div className="max-w-4xl mx-auto p-8 bg-white rounded-lg shadow-lg border border-gray-200">
-
+ 
  
 <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <h2 className="text-2xl font-bold text-center">Add New Car</h2>
@@ -278,10 +322,11 @@ const AddNewCarForm: React.FC = () => {
       </div>
 
       {/* Submit Button */}
-      <Button type="submit" color="dark"className="w-full">
-        Add Car to Inventory
+      <Button type="submit" color="dark"className="w-full" disabled={isLoading}>
+      {isLoading ? 'Saving...' : id ? 'Update Car' : 'Add Car'}
       </Button>
     </form>
+    </div>
     </div>
   )
 }

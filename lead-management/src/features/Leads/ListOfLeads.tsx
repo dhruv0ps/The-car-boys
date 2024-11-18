@@ -12,8 +12,11 @@ import {
 } from "@mui/material";
 import { Edit, Delete } from "@mui/icons-material";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 import debounce from 'lodash/debounce';
-
+import showConfirmationModal from "../../components/confirmationUtil";
+import { toast } from "react-toastify";
+import { FaChevronLeft } from "react-icons/fa";
 type Lead = {
   leadId?: string;
   id?: string;
@@ -30,6 +33,7 @@ type Lead = {
   createdDate: string;
   updatedDate: string;
   priorityLevel: string;
+  _id? : string
 };
 
 const ListOfLeads: React.FC = () => {
@@ -44,19 +48,21 @@ const ListOfLeads: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [currentPage, setCurrentPage] = useState<number>(1);
   const itemsPerPage = 5;
+const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/leads`);
-        setLeads(response.data.data);
-      } catch (error) {
-        console.error("Error fetching leads:", error);
-      }
-    };
+    
 
     fetchData();
   }, []);
+  const fetchData = async () => {
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/leads`);
+      setLeads(response.data.data);
+    } catch (error) {
+      console.error("Error fetching leads:", error);
+    }
+  };
 
   const handleSort = (field: keyof Lead) => {
     if (sortField === field) {
@@ -109,10 +115,40 @@ const ListOfLeads: React.FC = () => {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
-
+  const handleDelete = async (id: string) => {
+    const confirm = await showConfirmationModal("Are you sure you want to delete the lead?");
+    if (!confirm) return;
+  
+    try {
+      await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/leads/${id}`);
+      toast.success("Lead deleted successfully!");
+      await fetchData();
+    } catch (error) {
+      toast.error("Failed to delete the lead. Please try again.");
+    }
+  };
+  
   return (
     <div style={{ padding: "20px" }}>
-      <h2 style={{ marginBottom: "20px" }}>List of Leads</h2>
+          <div className="flex items-center justify-between mb-4">
+      {/* Back Button */}
+      <button
+        onClick={() => navigate(-1)}
+        className="flex items-center gap-2 px-4 py-2 bg-black rounded-md hover:bg-gray-800"
+      >
+        <FaChevronLeft size={16} style={{ color: "white" }} />
+        <span style={{ color: "white" }}>Back</span>
+      </button>
+
+      {/* Add New Lead Button */}
+      <button
+        onClick={() => navigate("/leads/add")}
+        className="px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800"
+      >
+        Add New Lead
+      </button>
+    </div>
+      <h2 className="text-3xl flex justify-center" style={{ marginBottom: "20px" }}>List of Leads</h2>
 
       {/* Search and Filter Controls */}
       <div style={{ display: "flex", gap: "16px", marginBottom: "16px", alignItems: "flex-start", flexWrap: "wrap" }}>
@@ -259,10 +295,10 @@ const ListOfLeads: React.FC = () => {
                 <TableCell>{lead.leadSource}</TableCell>
                 <TableCell>${lead.budget.toLocaleString()}</TableCell>
                 <TableCell>
-                  <IconButton color="primary">
+                  <IconButton color="primary" onClick={() => navigate(`/leads/add/${lead._id}`)}>
                     <Edit />
                   </IconButton>
-                  <IconButton color="secondary">
+                  <IconButton color="secondary" onClick={() => handleDelete((lead._id!))}>
                     <Delete />
                   </IconButton>
                 </TableCell>
