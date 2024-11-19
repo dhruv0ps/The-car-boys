@@ -2,7 +2,7 @@ const Lead = require("../config/models/leadModel");
 const Counter = require("../config/models/counterModel");
 const { model } = require("mongoose");
 const { search } = require("../routes");
-
+const Leadcategory = require("../config/models/leadCategoryModel");
 
 const getNextLead = async() => {
     const counter = await Counter.findOneAndUpdate(
@@ -19,6 +19,26 @@ const getNextLead = async() => {
 }
 const createLead = async(leadData) => {
     try{
+        if (leadData.leadCategories) {
+            const categories = await Leadcategory.find({
+              leadcategory: { $in: leadData.leadCategories }, // Match by name
+            });
+      
+            if (categories.length !== leadData.leadCategories.length) {
+              const invalidCategories = leadData.leadCategories.filter(
+                (cat) =>
+                  !categories.some(
+                    (matchedCat) => matchedCat.leadcategory === cat
+                  )
+              );
+              throw new Error(`Invalid categories: ${invalidCategories.join(", ")}`);
+            }
+      
+            // Map to ObjectIds
+            leadData.leadcategory = categories.map((category) => category._id);
+            delete leadData.leadCategories; // Remove frontend-only field
+          }
+      
         const leadId = await getNextLead();
 
         const newLead = new Lead({ ...leadData,leadId});
@@ -69,7 +89,7 @@ const getAllLeads = async ({filters,search,sortBy}) => {
 
 const getSingleId = async(id) => {
   try {
-    const lead = await Lead.findById(id) 
+    const lead = await Lead.findById(id).populate("leadcategory")
     if(!lead) {
         throw new Error("Lead not found");
 
@@ -91,7 +111,19 @@ const updateLead = async (_id, updateData,editedBy) => {
     }
 
     const changes = {};
-   
+   if (updateData.leadCategories) {
+      const categories = await Leadcategory.find({
+        leadcategory: { $in: updateData.leadCategories }, // Match by name
+      });
+
+      if (categories.length !== updateData.leadCategories.length) {
+        throw new Error("Some lead categories are invalid");
+      }
+
+      // Map to ObjectIds
+      updateData.leadcategory = categories.map((category) => category._id);
+      delete updateData.leadCategories; // Remove frontend-only field
+    }
     for(const key in updateData){
           if(updateData[key] !== existingLead[key]){
             changes[key] = updateData[key];
@@ -101,7 +133,7 @@ const updateLead = async (_id, updateData,editedBy) => {
       if(Object.keys(changes).length === 0)
         {
             return { message: "No changes detected, lead not updated." };
-
+            
     }  
 
     existingLead.editHistory.push({

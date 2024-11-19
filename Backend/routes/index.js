@@ -12,6 +12,8 @@ const userController = require("../controllers/userController")
 const {authenticateTokenAdmin} = require("../config/auth")
 const  leadController = require("../controllers/leadController");
 const  vehicelController = require("../controllers/vehicleController");
+const leadCategoryController = require("../controllers/leadCategoryController");
+const twiloController = require("../controllers/twiloController");
 
 // auth login 
 
@@ -32,9 +34,20 @@ router.put('/leads/:id', leadController.updateLead);
 router.delete("/leads/:id",leadController.deleteLead);
 
 
-
+// Lead Category 
+router.post("/leadcategory/add",leadCategoryController.createLeadCategory);
+router.get("/leadcategory",leadCategoryController.getLeadCategory)
+router.get("/leadcategory/:id",leadCategoryController.getLeadCategoryByid);
+router.put("/updatecategory/:id",leadCategoryController.updateCategory)
+router.delete("/leadcategory/:id", leadCategoryController.deleteCategoryController);
+// Vehicles 
 router.post("/vehicles/add",vehicelController.createVehicle)
 router.put("/vehicles/:id", vehicelController.updateVehicle);
 router.delete("/vehicles/:id", vehicelController.deleteVehicle);
 router.get("/vehicles", vehicelController.getAllVehicles);
 router.get("/vehicles/:id", vehicelController.getVehicleById);
+
+
+//SMS
+
+router.post("/send-sms/:id",twiloController.sendSMS);

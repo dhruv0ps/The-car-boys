@@ -124,6 +124,13 @@ const NavSideBar: React.FC<NavSideBarProps> = ({ isSidebarOpen }) => {
                         >
                             Add Leads
                         </Sidebar.Item>
+                        <Sidebar.Item
+                            as={Link}
+                            to="/leads/category"
+                            className={location.pathname === "/leads/category" ? "sidebar-item-active" : "sidebar-item"}
+                        >
+                             Leads Categories
+                        </Sidebar.Item>
                     </Sidebar.Collapse>
 
                     {/* Inventory Section */}

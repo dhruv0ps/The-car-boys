@@ -5,6 +5,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import { useNavigate, useParams } from "react-router-dom";
 import { FaChevronLeft } from "react-icons/fa";
+import ObjectMultiSelectDropdown from "../../components/ObjectMultiSelectDropdown";
 type Lead = {
   id: string;
   status: string;
@@ -14,6 +15,7 @@ type Lead = {
   phoneNumber: string;
   email?: string;
   leadSource: string;
+  leadCategories?: string[];
   interestedModels: string[];
   budget?: number;
   paymentPlan: string;
@@ -26,6 +28,8 @@ type Lead = {
   lastFollowUp?: string;
   nextFollowUp?: string;
   assignedTo?: string;
+  _id?: string;
+  leadcategory?: string;
 };
 
 const LeadForm: React.FC = () => {
@@ -37,7 +41,9 @@ const LeadForm: React.FC = () => {
     tradeInOption: false,
     priorityLevel: "Medium",
     interestedModels: [],
+    leadCategories: [],
   });
+  const [leadCategories, setLeadCategories] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [_isFetching, setIsFetching] = useState(false); // To handle loading for fetching data
   const formatToDateInput = (isoString: string | undefined) =>
@@ -50,8 +56,22 @@ const LeadForm: React.FC = () => {
     if (id) {
       fetchLeadData();
     }
+    fetchLeadCategory();
   }, [id]);
+  const fetchLeadCategory = async () => {
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_BACKEND_URL}/leadcategory`
+      );
+      const categories = response.data.data;
 
+   
+      setLeadCategories(categories); // Set available categories
+    } catch (error) {
+      console.error("Error fetching lead categories:", error);
+    }
+  };
+  
   const fetchLeadData = async () => {
     setIsFetching(true);
     try {
@@ -59,6 +79,9 @@ const LeadForm: React.FC = () => {
       const data = response.data.data;
     setLead({
       ...data,
+       leadCategories: data.leadcategory.map(
+        (category: { leadcategory: string }) => category.leadcategory // Extract IDs
+      ),
       month: data.month ? data.month.slice(0, 7) : "",
       lastFollowUp: formatToDateInput(data.lastFollowUp),
       nextFollowUp: formatToDateInput(data.nextFollowUp),
@@ -84,16 +107,18 @@ const LeadForm: React.FC = () => {
     setIsLoading(true);
     
     try {
+       const { leadcategory, ...payload } = lead;
+
       if (id) {
         // Update existing lead
-        const response = await axios.put(`${import.meta.env.VITE_BACKEND_URL}/leads/${id}`, lead);
+        const response = await axios.put(`${import.meta.env.VITE_BACKEND_URL}/leads/${id}`, payload);
         if (response.status === 200) {
           toast.success("Lead updated successfully");
           navigate("/leads/view");
         }
       } else {
         // Add new lead
-        const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/addlead`, lead);
+        const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/addlead`, payload);
         if (response.status === 201) {
           toast.success("Lead saved successfully");
           navigate("/leads/view");
@@ -238,7 +263,7 @@ const LeadForm: React.FC = () => {
         </div>
 
         {/* Interested Models */}
-        <div className="space-y-2 col-span-full">
+        <div className="space-y-2 ">
           <Label htmlFor="interestedModels">Interested Models</Label>
           {/* <Select
             id="interestedModels"
@@ -254,6 +279,20 @@ const LeadForm: React.FC = () => {
                 <MultiSelectDropdown options={models} value={lead.interestedModels || []}  placeholder="Select models"    onChange={(selectedModels) => handleChange('interestedModels', selectedModels)}/>
 
         </div>
+        <div className="space-y-2 col-span-full">
+        <ObjectMultiSelectDropdown
+  options={leadCategories.map((category: any) => ({
+    value: category._id, // Use the _id for selection
+    label: category.leadcategory, // Display the name
+  }))}
+  value={lead.leadCategories || []}
+  placeholder="Select lead categories"
+  onChange={(selectedCategories) =>
+    handleChange("leadCategories", selectedCategories)
+  }
+/>
+
+            </div>
 
         {/* Budget */}
         <div className="space-y-2">

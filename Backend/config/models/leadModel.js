@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const Leadcategory = require("./leadCategoryModel");
 
 const leadSchema = new mongoose.Schema({
     leadId: {
@@ -7,6 +8,13 @@ const leadSchema = new mongoose.Schema({
         required: true,
     
     },
+    leadcategory: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Leadcategory", // Reference to the LeadCategory model
+        },
+      ],
+      
     status: {
         type: String,
         enum: ["New", "Hot", "Cold", "Warm", "Lost", "Closed", "Pending Approval", "Timepass"],

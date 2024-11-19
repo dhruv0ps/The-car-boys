@@ -11,6 +11,7 @@ import CarList from './features/Cars/CarView';
 import UserTable from './features/User/ListUser';
 import LoginPage from './features/User/Login';
 import ProtectedRoute from './ProtectedRoute';
+import LeadCategoryModal from './features/Leads/LeadCategoryModal';
 
 
 // Define routes using createBrowserRouter
@@ -39,7 +40,14 @@ const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
-      
+      {
+        path: "/leads/category",
+        element: (
+          <ProtectedRoute> {/* Wrap each child route in ProtectedRoute */}
+            <LeadCategoryModal />
+          </ProtectedRoute>
+        ),
+      },
       {
         path: "/inventory/add",
         element: (
